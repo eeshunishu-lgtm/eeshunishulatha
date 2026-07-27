@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spelling Bee — Listen. Spell. Learn.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@600;700;900&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#16302A;
+    --bg-deep:#102420;
+    --panel:#1F4038;
+    --panel-light:#28493F;
+    --panel-line:#3A5C50;
+    --chalk:#F2EFE6;
+    --chalk-dim:#B9C6BE;
+    --accent:#E8B04B;
+    --accent-dim:#C9963E;
+    --good:#8FCB8C;
+    --good-deep:#4E8A4B;
+    --bad:#E1786E;
+    --bad-deep:#B04B41;
+    --font-display:'Bitter',Georgia,serif;
+    --font-body:'Work Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',monospace;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--chalk);
+    font-family:var(--font-body);
+    min-height:100vh;
+    position:relative;
+    overflow-x:hidden;
+  }
+
+  /* chalk dust texture */
+  body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    opacity:0.05;
+    background-image:
+      radial-gradient(circle at 15% 20%, var(--chalk) 0, transparent 1px),
+      radial-gradient(circle at 65% 55%, var(--chalk) 0, transparent 1px),
+      radial-gradient(circle at 35% 80%, var(--chalk) 0, transparent 1px),
+      radial-gradient(circle at 85% 15%, var(--chalk) 0, transparent 1px),
+      radial-gradient(circle at 50% 40%, var(--chalk) 0, transparent 1px),
+      radial-gradient(circle at 10% 65%, var(--chalk) 0, transparent 1px),
+      radial-gradient(circle at 90% 85%, var(--chalk) 0, transparent 1px);
+    background-size:340px 340px;
+    z-index:0;
+  }
+
+  .wrap{
+    position:relative;
+    z-index:1;
+    max-width:640px;
+    margin:0 auto;
+    padding:36px 20px 80px;
+  }
+
+  header{
+    text-align:center;
+    margin-bottom:28px;
+  }
+  .eyebrow{
+    font-family:var(--font-mono);
+    font-size:11px;
+    letter-spacing:0.22em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin:0 0 8px;
+  }
+  h1{
+    font-family:var(--font-display);
+    font-weight:900;
+    font-size:clamp(32px,7vw,46px);
+    margin:0;
+    letter-spacing:-0.01em;
+    text-shadow:0 2px 0 rgba(0,0,0,0.25);
+  }
+  .sub{
+    font-size:14px;
+    color:var(--chalk-dim);
+    margin:10px auto 0;
+    max-width:420px;
+    line-height:1.5;
+  }
+
+  /* tabs styled like stacked index cards */
+  .tabs{
+    display:flex;
+    justify-content:center;
+    gap:6px;
+    margin:26px 0 18px;
+    flex-wrap:wrap;
+  }
+  .tab{
+    font-family:var(--font-mono);
+    font-size:12px;
+    letter-spacing:0.04em;
+    background:var(--panel);
+    color:var(--chalk-dim);
+    border:1px solid var(--panel-line);
+    border-bottom:none;
+    padding:10px 16px;
+    border-radius:8px 8px 0 0;
+    cursor:pointer;
+    transition:transform .15s ease, color .15s ease, background .15s ease;
+  }
+  .tab:nth-child(1){transform:rotate(-1.2deg);}
+  .tab:nth-child(2){transform:rotate(0.4deg);}
+  .tab:nth-child(3){transform:rotate(-0.3deg);}
+  .tab:hover{color:var(--chalk);}
+  .tab.active{
+    background:var(--panel-light);
+    color:var(--accent);
+    transform:translateY(2px) rotate(0deg);
+    box-shadow:0 -2px 0 var(--accent) inset;
+  }
+
+  /* the flashcard */
+  .card{
+    background:var(--panel-light);
+    border-radius:14px;
+    border:1px solid var(--panel-line);
+    padding:40px 30px 30px;
+    position:relative;
+    box-shadow:0 18px 40px -18px rgba(0,0,0,0.55), 0 2px 0 rgba(255,255,255,0.02) inset;
+    transform:rotate(-0.5deg);
+  }
+  .card .hole{
+    position:absolute;
+    top:16px;
+    width:14px;
+    height:14px;
+    border-radius:50%;
+    background:var(--bg-deep);
+    box-shadow:inset 0 2px 3px rgba(0,0,0,0.6);
+  }
+  .card .hole.l{left:22px;}
+  .card .hole.r{right:22px;}
+
+  .tag-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-family:var(--font-mono);
+    font-size:11px;
+    color:var(--chalk-dim);
+    letter-spacing:0.05em;
+    margin-bottom:22px;
+  }
+  .tag{
+    padding:3px 9px;
+    border-radius:20px;
+    border:1px solid var(--panel-line);
+  }
+  .tag.diff-easy{color:var(--good);border-color:var(--good-deep);}
+  .tag.diff-medium{color:var(--accent);border-color:var(--accent-dim);}
+  .tag.diff-hard{color:var(--bad);border-color:var(--bad-deep);}
+
+  .speaker-zone{
+    text-align:center;
+    padding:18px 0 26px;
+  }
+  .speaker-btn{
+    width:92px;height:92px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #33574B, #1B3B32);
+    border:1px solid var(--panel-line);
+    color:var(--accent);
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    transition:transform .12s ease, box-shadow .12s ease;
+    box-shadow:0 10px 22px -10px rgba(0,0,0,0.6);
+  }
+  .speaker-btn:hover{transform:scale(1.05);}
+  .speaker-btn:active{transform:scale(0.96);}
+  .speaker-btn svg{width:38px;height:38px;}
+  .speaker-hint{
+    font-size:12.5px;
+    color:var(--chalk-dim);
+    margin-top:12px;
+  }
+  .phonetic{
+    font-family:var(--font-mono);
+    color:var(--accent-dim);
+    font-size:13.5px;
+    text-align:center;
+    margin:8px 0 0;
+    letter-spacing:0.02em;
+  }
+  .settings-bar{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:8px;
+    margin:18px auto 0;
+    flex-wrap:wrap;
+  }
+  .settings-bar label{
+    font-family:var(--font-mono);
+    font-size:11px;
+    color:var(--chalk-dim);
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+  }
+  .settings-bar select{
+    width:auto;
+    max-width:220px;
+    padding:7px 10px;
+    font-size:12.5px;
+  }
+  .mini-actions{
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    margin-top:14px;
+    flex-wrap:wrap;
+  }
+  .mini-btn{
+    font-family:var(--font-mono);
+    font-size:11.5px;
+    background:transparent;
+    border:1px solid var(--panel-line);
+    color:var(--chalk-dim);
+    padding:7px 12px;
+    border-radius:20px;
+    cursor:pointer;
+    transition:border-color .15s, color .15s;
+  }
+  .mini-btn:hover{color:var(--accent);border-color:var(--accent-dim);}
+  .mini-btn.on{color:var(--accent);border-color:var(--accent-dim);}
+
+  .answer-row{
+    margin-top:8px;
+  }
+  input[type=text]{
+    width:100%;
+    background:transparent;
+    border:none;
+    border-bottom:2px dashed var(--panel-line);
+    color:var(--chalk);
+    font-family:var(--font-display);
+    font-size:26px;
+    text-align:center;
+    padding:10px 6px 12px;
+    outline:none;
+    letter-spacing:0.02em;
+  }
+  input[type=text]:focus{border-bottom-color:var(--accent);}
+  input[type=text]::placeholder{color:var(--panel-line);font-family:var(--font-body);font-size:15px;}
+
+  .submit-row{
+    display:flex;
+    justify-content:center;
+    margin-top:20px;
+  }
+  .btn{
+    font-family:var(--font-body);
+    font-weight:600;
+    font-size:14.5px;
+    background:var(--accent);
+    color:#1B2E24;
+    border:none;
+    padding:12px 26px;
+    border-radius:9px;
+    cursor:pointer;
+    transition:transform .12s ease, filter .12s ease;
+  }
+  .btn:hover{filter:brightness(1.07);}
+  .btn:active{transform:scale(0.97);}
+  .btn.ghost{
+    background:transparent;
+    border:1px solid var(--panel-line);
+    color:var(--chalk);
+  }
+  .btn.ghost:hover{border-color:var(--accent);color:var(--accent);}
+  .btn:disabled{opacity:0.45;cursor:not-allowed;}
+
+  .feedback{
+    margin-top:22px;
+    text-align:center;
+    animation:pop .25s ease;
+  }
+  @keyframes pop{from{transform:scale(0.92);opacity:0;}to{transform:scale(1);opacity:1;}}
+  .feedback .verdict{
+    font-family:var(--font-display);
+    font-weight:800;
+    font-size:20px;
+    margin-bottom:6px;
+  }
+  .feedback.correct .verdict{color:var(--good);}
+  .feedback.incorrect .verdict{color:var(--bad);}
+  .spelled-out{
+    font-family:var(--font-mono);
+    font-size:22px;
+    letter-spacing:0.08em;
+    margin:8px 0 4px;
+  }
+  .spelled-out .ok{color:var(--good);}
+  .spelled-out .bad{color:var(--bad);text-decoration:underline;text-decoration-color:var(--bad-deep);}
+  .definition{
+    font-size:13px;
+    color:var(--chalk-dim);
+    max-width:420px;
+    margin:10px auto 0;
+    line-height:1.5;
+  }
+
+  .score-strip{
+    display:flex;
+    justify-content:center;
+    gap:22px;
+    margin-top:24px;
+    font-family:var(--font-mono);
+    font-size:12px;
+    color:var(--chalk-dim);
+  }
+  .score-strip b{color:var(--accent);font-size:14px;}
+
+  /* setup panels */
+  .setup{padding:6px 4px 4px;}
+  .setup label{
+    display:block;
+    font-family:var(--font-mono);
+    font-size:11px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--chalk-dim);
+    margin:0 0 8px;
+  }
+  select, textarea{
+    width:100%;
+    background:var(--panel);
+    border:1px solid var(--panel-line);
+    color:var(--chalk);
+    border-radius:9px;
+    padding:12px;
+    font-family:var(--font-body);
+    font-size:14.5px;
+    outline:none;
+  }
+  select:focus, textarea:focus{border-color:var(--accent-dim);}
+  textarea{min-height:110px;resize:vertical;line-height:1.5;}
+  .field{margin-bottom:18px;}
+  .hint{font-size:12px;color:var(--chalk-dim);margin-top:6px;line-height:1.5;}
+
+  .upload-box{
+    border:1.5px dashed var(--panel-line);
+    border-radius:10px;
+    padding:26px 14px;
+    text-align:center;
+    cursor:pointer;
+    transition:border-color .15s;
+  }
+  .upload-box:hover{border-color:var(--accent-dim);}
+  .upload-box svg{width:30px;height:30px;color:var(--accent);margin-bottom:8px;}
+  .upload-box .u-title{font-weight:600;font-size:14px;}
+  .upload-box .u-sub{font-size:12px;color:var(--chalk-dim);margin-top:4px;}
+  #imgInput{display:none;}
+  .preview-thumb{max-width:100%;max-height:160px;border-radius:8px;margin-top:14px;display:block;margin-left:auto;margin-right:auto;}
+
+  .word-chip-grid{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top:14px;
+  }
+  .chip{
+    font-family:var(--font-mono);
+    font-size:12.5px;
+    padding:6px 11px;
+    border-radius:20px;
+    border:1px solid var(--panel-line);
+    background:var(--panel);
+    color:var(--chalk-dim);
+    cursor:pointer;
+    user-select:none;
+    transition:all .12s;
+  }
+  .chip.selected{color:var(--accent);border-color:var(--accent-dim);background:rgba(232,176,75,0.08);}
+
+  .ocr-status{
+    font-family:var(--font-mono);
+    font-size:12px;
+    color:var(--accent);
+    margin-top:12px;
+    min-height:16px;
+  }
+
+  .progress-line{
+    font-family:var(--font-mono);
+    font-size:11px;
+    color:var(--chalk-dim);
+    text-align:center;
+    margin-top:16px;
+  }
+
+  .summary{
+    text-align:center;
+    padding:10px 0 4px;
+  }
+  .summary .big{
+    font-family:var(--font-display);
+    font-weight:900;
+    font-size:44px;
+    color:var(--accent);
+  }
+  .summary .lbl{
+    font-family:var(--font-mono);
+    font-size:12px;
+    color:var(--chalk-dim);
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+  }
+  .target-word{
+    font-family:var(--font-display);
+    font-weight:800;
+    font-size:34px;
+    color:var(--accent);
+    letter-spacing:0.03em;
+    margin:6px 0 22px;
+  }
+  .cheat-table{
+    margin-top:14px;
+    max-width:360px;
+    margin-left:auto;
+    margin-right:auto;
+    text-align:left;
+  }
+  .cheat-table .row{
+    display:flex;
+    justify-content:space-between;
+    gap:14px;
+    font-size:13px;
+    padding:6px 2px;
+    border-bottom:1px dashed var(--panel-line);
+  }
+  .cheat-table .row .wrong{color:var(--bad);text-decoration:line-through;text-decoration-color:var(--bad-deep);}
+  .cheat-table .row .right{color:var(--good);font-weight:600;}
+  .cheat-table summary{
+    cursor:pointer;
+    font-family:var(--font-mono);
+    font-size:11px;
+    color:var(--chalk-dim);
+    text-align:center;
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+  }
+  .missed-list{
+    margin:18px auto 0;
+    max-width:360px;
+    text-align:left;
+    font-size:13.5px;
+    color:var(--chalk-dim);
+  }
+  .missed-list div{padding:5px 0;border-bottom:1px dashed var(--panel-line);}
+  .missed-list b{color:var(--bad);}
+
+  .action-row{
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    margin-top:24px;
+    flex-wrap:wrap;
+  }
+
+  footer{
+    text-align:center;
+    font-size:11.5px;
+    color:var(--chalk-dim);
+    margin-top:34px;
+    font-family:var(--font-mono);
+    opacity:0.7;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important;}
+  }
+
+  .visually-hidden{
+    position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);
+  }
+
+  @media (max-width:420px){
+    .card{padding:32px 18px 24px;}
+    .speaker-btn{width:78px;height:78px;}
+    input[type=text]{font-size:22px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Listen · Spell · Learn</p>
+    <h1>Spelling Bee</h1>
+    <p class="sub">Claude reads a word aloud — you type what you hear. Practice with a curated word bank, your own list, or words pulled straight from a photo.</p>
+    <div class="settings-bar">
+      <label for="accentSelect">Accent</label>
+      <select id="accentSelect">
+        <option value="gb">British English</option>
+        <option value="in">Indian English</option>
+      </select>
+      <label for="voiceSelect">Voice</label>
+      <select id="voiceSelect"><option>Loading voices…</option></select>
+    </div>
+    <p class="hint" id="voiceNote" style="text-align:center;"></p>
+  </header>
+
+  <div style="text-align:center;margin:-6px 0 6px;">
+    <button class="mini-btn" id="globalRestartBtn">⟲ Restart</button>
+  </div>
+
+  <nav class="tabs" role="tablist" aria-label="Choose word source">
+    <button class="tab active" data-mode="random" role="tab" aria-selected="true">Random Word</button>
+    <button class="tab" data-mode="custom" role="tab" aria-selected="false">My Word List</button>
+    <button class="tab" data-mode="image" role="tab" aria-selected="false">From a Picture</button>
+  </nav>
+
+  <div class="card" id="cardRoot">
+    <span class="hole l" aria-hidden="true"></span>
+    <span class="hole r" aria-hidden="true"></span>
+    <div id="cardInner"><!-- rendered by JS --></div>
+  </div>
+
+  <footer>Uses your browser's built-in voice &amp; on-device text recognition. Nothing you type or upload leaves your device.</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  // ---------- word bank ----------
+  const BANK = {
+    easy: ["apple","chair","river","happy","garden","bottle","yellow","pencil","forest","window","turtle","basket","rabbit","cloud","bridge","kitchen","monkey","picture","summer","winter","autumn","candle","dragon","engine","farmer","guitar","hammer","island","jungle","kitten","ladder","magnet","napkin","ocean","pillow","quiet","rocket","sandal","tunnel","umbrella","violet","walnut","yogurt","zipper","biscuit","cabinet","dolphin","elephant","feather","giraffe","harvest","insect","jacket","kettle","lantern","mirror","nickel","orchard","parcel","quilt","raisin","saddle"],
+    medium: ["necessary","restaurant","beautiful","government","vacuum","rhythm","separate","embarrass","occurred","definitely","conscience","questionnaire","maintenance","liaison","privilege","committee","accommodate","conscientious","exaggerate","harass","misspell","mischievous","occasionally","perseverance","recommend","threshold","withhold","achievement","apparent","argument","business","calendar","category","cemetery","colleague","column","consensus","curiosity","dilemma","embarrassment","existence","fluorescent","foreign","fulfill","guarantee","humorous","immediately","independent","jewelry","knowledge","leisure","license","maneuver","neighbor","noticeable","occurrence","opportunity","parallel","possession","reference","separately"],
+    hard: ["onomatopoeia","bureaucracy","entrepreneur","idiosyncrasy","pharaoh","rendezvous","silhouette","synchronous","unnecessary","vicissitude","xenophobia","zeitgeist","acquiesce","bourgeoisie","cacophony","ecclesiastical","gregarious","hierarchical","inoculate","juxtaposition","kaleidoscope","liquefy","millennium","nauseous","obsequious","paraphernalia","quintessential","reconnaissance","sacrilegious","ubiquitous","vacillate","xylophone","zealous","apocalypse","bureaucratic","disingenuous","ephemeral","facetious","gubernatorial","hypochondriac","incongruous","juggernaut","knowledgeable","labyrinth","malfeasance","nomenclature","obfuscate","perspicacious","quandary","recalcitrant","supersede","tumultuous","unparalleled","vernacular","whimsical"]
+  };
+
+  // ---------- state ----------
+  let mode = "random";
+  let voices = [];
+  let rateLevel = "normal"; // normal | slow | verySlow
+  let selectedVoiceURI = null;
+  let accent = "gb"; // gb | in
+  const RATE_MAP = { normal:0.9, slow:0.62, verySlow:0.42 };
+  const RATE_LABEL = { normal:"Normal speed", slow:"Slow", verySlow:"Very slow" };
+  const RATE_ORDER = ["normal","slow","verySlow"];
+
+  const randomState = { current:null, difficulty:"mixed", score:0, total:0, def:null, example:null, phonRaw:[] };
+  const customState  = { queue:[], idx:0, score:0, missed:[], current:null, def:null, example:null, phonRaw:[] };
+  const imageState   = { extracted:[], selected:new Set(), queue:[], idx:0, score:0, missed:[], current:null, phase:"upload", ocrBusy:false, def:null, example:null, phonRaw:[] };
+  const drillState   = { words:[], pairs:[], wordIdx:0, rep:0, active:false, returnTo:null };
+
+  let answered = false;
+
+  // ---------- speech ----------
+  function loadVoices(){
+    voices = speechSynthesis.getVoices ? speechSynthesis.getVoices() : [];
+    populateVoiceSelect();
+  }
+  if('speechSynthesis' in window){
+    loadVoices();
+    speechSynthesis.onvoiceschanged = loadVoices;
+  }
+
+  function normalizeLang(lang){
+    return (lang || "").toLowerCase().replace(/_/g, "-");
+  }
+  function matchesAccent(v, acc){
+    const l = normalizeLang(v.lang);
+    return acc==="gb" ? l.indexOf("en-gb")===0 : l.indexOf("en-in")===0;
+  }
+
+  function populateVoiceSelect(){
+    const sel = document.getElementById("voiceSelect");
+    const noteEl = document.getElementById("voiceNote");
+    if(!sel) return;
+    let candidates = voices.filter(v => matchesAccent(v, accent));
+    let note = "";
+    if(candidates.length===0){
+      candidates = voices.filter(v => normalizeLang(v.lang).indexOf("en")===0);
+      note = candidates.length>0
+        ? "No "+(accent==="gb"?"British":"Indian")+" voice found on this device — using the closest English voice available."
+        : "";
+    }
+    if(noteEl) noteEl.textContent = note;
+    if(candidates.length===0) return;
+    const prior = selectedVoiceURI;
+    sel.innerHTML = candidates.map(v =>
+      '<option value="'+v.voiceURI+'">'+escapeHtml(v.name)+' ('+v.lang+')</option>'
+    ).join("");
+    const stillExists = prior && candidates.some(v=>v.voiceURI===prior);
+    const preferred = stillExists ? prior : (getBestVoice(candidates) || candidates[0]).voiceURI;
+    sel.value = preferred;
+    selectedVoiceURI = preferred;
+    sel.onchange = () => { selectedVoiceURI = sel.value; };
+  }
+
+  function getBestVoice(list){
+    return list.find(v => /Natural|Enhanced|Premium|Neural/i.test(v.name))
+      || list.find(v => v.localService === false)
+      || list[0];
+  }
+
+  function currentVoice(){
+    return voices.find(v => v.voiceURI === selectedVoiceURI);
+  }
+
+  // Picks a recorded pronunciation matching the chosen accent when the dictionary
+  // offers more than one, and falls back to synthesized speech otherwise.
+  function resolveAudioPhonetic(phonRaw){
+    if(!phonRaw || phonRaw.length===0) return {audio:null, phonetic:null};
+    const withText = phonRaw.find(p => p.text);
+    const phonetic = withText ? withText.text : null;
+    const withAudio = phonRaw.filter(p => p.audio);
+    if(withAudio.length===0) return {audio:null, phonetic};
+    const keyword = accent==="gb" ? "uk" : "in";
+    let match = withAudio.find(p => p.audio.toLowerCase().includes("-"+keyword) || p.audio.toLowerCase().includes(keyword+"."));
+    if(!match) match = withAudio.find(p => !p.audio.toLowerCase().includes("-us"));
+    if(!match) match = withAudio[0];
+    let url = match.audio;
+    if(url.startsWith("//")) url = "https:"+url;
+    return {audio:url, phonetic};
+  }
+
+  // Prefers a real human pronunciation recording (from the dictionary lookup) over
+  // synthesized speech, since browser TTS clarity varies a lot by device.
+  function speak(text, audioUrl){
+    if(audioUrl){
+      const audio = new Audio(audioUrl);
+      audio.playbackRate = rateLevel==="verySlow" ? 0.6 : rateLevel==="slow" ? 0.78 : 1;
+      audio.play().catch(()=>speakTTS(text));
+      return;
+    }
+    speakTTS(text);
+  }
+
+  function speakTTS(text){
+    if(!('speechSynthesis' in window)){
+      alert("This browser doesn't support text-to-speech. Try Chrome, Edge, or Safari.");
+      return;
+    }
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = RATE_MAP[rateLevel];
+    u.pitch = 1;
+    u.lang = accent==="gb" ? "en-GB" : "en-IN";
+    const v = currentVoice();
+    if(v) u.voice = v;
+    speechSynthesis.speak(u);
+  }
+
+
+  // ---------- icons ----------
+  const ICON = {
+    speaker:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 5V4L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a9 9 0 0 1 0 12"/></svg>',
+    upload:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>'
+  };
+
+  // ---------- dictionary lookup (best effort) ----------
+  async function fetchDefinition(word){
+    try{
+      const res = await fetch("https://api.dictionaryapi.dev/api/v2/entries/en/" + encodeURIComponent(word.toLowerCase()));
+      if(!res.ok) return {def:null, example:null, phonRaw:[]};
+      const data = await res.json();
+      let def = null, example = null, phonRaw = [];
+      if(Array.isArray(data)){
+        for(const entry of data){
+          if(phonRaw.length===0 && Array.isArray(entry.phonetics) && entry.phonetics.length>0){
+            phonRaw = entry.phonetics;
+          }
+          if(Array.isArray(entry.meanings)){
+            for(const meaning of entry.meanings){
+              if(Array.isArray(meaning.definitions)){
+                for(const d of meaning.definitions){
+                  if(!def && d.definition) def = d.definition;
+                  if(!example && d.example) example = d.example;
+                  if(def && example) break;
+                }
+              }
+              if(def && example) break;
+            }
+          }
+          if(def && example && phonRaw.length>0) break;
+        }
+      }
+      return {def, example, phonRaw};
+    }catch(e){
+      return {def:null, example:null, phonRaw:[]};
+    }
+  }
+
+  // ---------- helpers ----------
+  function pickRandom(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+  function difficultyOf(word){
+    if(BANK.easy.includes(word)) return "easy";
+    if(BANK.medium.includes(word)) return "medium";
+    if(BANK.hard.includes(word)) return "hard";
+    return "custom";
+  }
+  function diffLabel(d){
+    return d==="easy"?"Easy":d==="medium"?"Medium":d==="hard"?"Hard":"Your list";
+  }
+  function normalize(s){ return (s||"").trim().toLowerCase(); }
+
+  function diffHighlight(userAnswer, correct){
+    let html = "";
+    for(let i=0;i<correct.length;i++){
+      const c = correct[i];
+      const u = userAnswer[i];
+      if(u && u.toLowerCase()===c.toLowerCase()){
+        html += '<span class="ok">'+escapeHtml(c)+'</span>';
+      }else{
+        html += '<span class="bad">'+escapeHtml(c)+'</span>';
+      }
+    }
+    return html;
+  }
+  function escapeHtml(s){
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  // ---------- render root ----------
+  const cardInner = document.getElementById("cardInner");
+
+  function setMode(newMode){
+    mode = newMode;
+    document.querySelectorAll(".tab").forEach(t=>{
+      const active = t.dataset.mode===mode;
+      t.classList.toggle("active", active);
+      t.setAttribute("aria-selected", active ? "true":"false");
+    });
+    render();
+  }
+  document.querySelectorAll(".tab").forEach(t=>{
+    t.addEventListener("click", ()=>setMode(t.dataset.mode));
+  });
+
+  function render(){
+    answered = false;
+    if(mode==="random") renderRandomSetupOrQuiz();
+    if(mode==="custom") renderCustom();
+    if(mode==="image") renderImage();
+  }
+
+  function rerenderCurrent(){
+    if(drillState.active) renderDrill();
+    else render();
+  }
+
+  const accentSelect = document.getElementById("accentSelect");
+  if(accentSelect){
+    accentSelect.value = accent;
+    accentSelect.addEventListener("change", ()=>{
+      accent = accentSelect.value;
+      populateVoiceSelect();
+      rerenderCurrent();
+    });
+  }
+
+  // =========================================================
+  // RANDOM MODE
+  // =========================================================
+  function renderRandomSetupOrQuiz(){
+    if(!randomState.current){
+      cardInner.innerHTML =
+        '<div class="setup">'+
+          '<div class="field">'+
+            '<label>Difficulty</label>'+
+            '<select id="diffSelect">'+
+              '<option value="mixed">Mixed</option>'+
+              '<option value="easy">Easy</option>'+
+              '<option value="medium">Medium</option>'+
+              '<option value="hard">Hard</option>'+
+            '</select>'+
+          '</div>'+
+          '<div class="submit-row"><button class="btn" id="startRandom">Start practicing</button></div>'+
+          '<p class="hint" style="text-align:center;margin-top:16px;">Draws from a curated bank of everyday, tricky, and advanced words. Each round also tries to pull a short definition so you can hear it used.</p>'+
+        '</div>';
+      document.getElementById("diffSelect").value = randomState.difficulty;
+      document.getElementById("diffSelect").addEventListener("change", e=>{ randomState.difficulty = e.target.value; });
+      document.getElementById("startRandom").addEventListener("click", ()=>{
+        nextRandomWord();
+      });
+      return;
+    }
+    const rp = resolveAudioPhonetic(randomState.phonRaw);
+    renderQuizCard({
+      word: randomState.current,
+      difficulty: difficultyOf(randomState.current),
+      def: randomState.def,
+      example: randomState.example,
+      audio: rp.audio,
+      phonetic: rp.phonetic,
+      progress: 'Practiced: <b>'+randomState.total+'</b> · Correct: <b>'+randomState.score+'</b> · Mistakes: <b>'+(randomState.total-randomState.score)+'</b>',
+      onSubmit: (val)=>handleRandomSubmit(val),
+      onNext: ()=>nextRandomWord(),
+      endOfList:false
+    });
+  }
+
+  async function nextRandomWord(){
+    let pool;
+    if(randomState.difficulty==="mixed") pool = [...BANK.easy, ...BANK.medium, ...BANK.hard];
+    else pool = BANK[randomState.difficulty];
+    randomState.current = pickRandom(pool);
+    randomState.def = null;
+    randomState.example = null;
+    randomState.phonRaw = [];
+    renderRandomSetupOrQuiz();
+    const {def, example, phonRaw} = await fetchDefinition(randomState.current);
+    randomState.def = def;
+    randomState.example = example;
+    randomState.phonRaw = phonRaw;
+    if(!answered) renderRandomSetupOrQuiz();
+  }
+
+  function handleRandomSubmit(val){
+    randomState.total++;
+    const correct = normalize(val)===normalize(randomState.current);
+    if(correct) randomState.score++;
+    const rp = resolveAudioPhonetic(randomState.phonRaw);
+    showFeedback(correct, val, randomState.current, randomState.def, rp.audio, ()=>{
+      nextRandomWord();
+    });
+  }
+
+  // =========================================================
+  // CUSTOM MODE
+  // =========================================================
+  function renderCustom(){
+    if(customState.queue.length===0){
+      cardInner.innerHTML =
+        '<div class="setup">'+
+          '<div class="field">'+
+            '<label>Type or paste your words</label>'+
+            '<textarea id="customWords" placeholder="e.g. photosynthesis, receipt, calendar&#10;(separate with commas, spaces, or new lines)"></textarea>'+
+          '</div>'+
+          '<div class="submit-row"><button class="btn" id="startCustom">Start practicing</button></div>'+
+        '</div>';
+      document.getElementById("startCustom").addEventListener("click", ()=>{
+        const raw = document.getElementById("customWords").value;
+        const words = raw.split(/[\n,]+/).map(w=>w.trim()).filter(Boolean);
+        if(words.length===0) return;
+        customState.queue = shuffle(words);
+        customState.idx = 0;
+        customState.score = 0;
+        customState.missed = [];
+        loadCustomWord();
+      });
+      return;
+    }
+    if(customState.idx >= customState.queue.length){
+      renderSummary(customState.score, customState.queue.length, customState.missed, ()=>{
+        customState.queue = [];
+        render();
+      }, ()=>{
+        customState.queue = shuffle(customState.missed.map(m=>m.word));
+        customState.idx = 0;
+        customState.score = 0;
+        customState.missed = [];
+        loadCustomWord();
+      });
+      return;
+    }
+    const rp = resolveAudioPhonetic(customState.phonRaw);
+    renderQuizCard({
+      word: customState.current,
+      difficulty: "custom",
+      def: customState.def,
+      example: customState.example,
+      audio: rp.audio,
+      phonetic: rp.phonetic,
+      progress: 'Word <b>'+(customState.idx+1)+'</b> of '+customState.queue.length,
+      onSubmit: (val)=>handleCustomSubmit(val),
+      onNext: ()=>{ customState.idx++; loadCustomWord(); },
+      endOfList:false
+    });
+  }
+
+  async function loadCustomWord(){
+    if(customState.idx >= customState.queue.length){ renderCustom(); return; }
+    customState.current = customState.queue[customState.idx];
+    customState.def = null;
+    customState.example = null;
+    customState.phonRaw = [];
+    renderCustom();
+    const {def, example, phonRaw} = await fetchDefinition(customState.current);
+    customState.def = def;
+    customState.example = example;
+    customState.phonRaw = phonRaw;
+    if(!answered) renderCustom();
+  }
+
+  function handleCustomSubmit(val){
+    const correct = normalize(val)===normalize(customState.current);
+    if(correct) customState.score++;
+    else customState.missed.push({word:customState.current, typed:val});
+    const rp = resolveAudioPhonetic(customState.phonRaw);
+    showFeedback(correct, val, customState.current, customState.def, rp.audio, ()=>{
+      customState.idx++;
+      loadCustomWord();
+    });
+  }
+
+  // =========================================================
+  // IMAGE MODE
+  // =========================================================
+  function renderImage(){
+    if(imageState.phase==="upload"){
+      cardInner.innerHTML =
+        '<div class="setup">'+
+          '<label>Upload a photo with words in it</label>'+
+          '<div class="upload-box" id="uploadBox">'+
+            ICON.upload+
+            '<div class="u-title">Click to choose an image</div>'+
+            '<div class="u-sub">A worksheet, a book page, a sign — anything with printed or written text</div>'+
+            '<input type="file" id="imgInput" accept="image/*">'+
+          '</div>'+
+          '<div class="ocr-status" id="ocrStatus"></div>'+
+        '</div>';
+      document.getElementById("uploadBox").addEventListener("click", ()=>document.getElementById("imgInput").click());
+      document.getElementById("imgInput").addEventListener("change", handleImageUpload);
+      return;
+    }
+    if(imageState.phase==="picking"){
+      const chips = imageState.extracted.map(w=>{
+        const sel = imageState.selected.has(w);
+        return '<span class="chip'+(sel?' selected':'')+'" data-word="'+escapeHtml(w)+'">'+escapeHtml(w)+'</span>';
+      }).join("");
+      cardInner.innerHTML =
+        '<div class="setup">'+
+          '<label>Found '+imageState.extracted.length+' word(s) — tap the ones to practice</label>'+
+          '<div class="word-chip-grid" id="chipGrid">'+chips+'</div>'+
+          '<div class="submit-row" style="margin-top:22px;"><button class="btn" id="startImageQuiz">Practice selected words</button></div>'+
+          '<div class="submit-row" style="margin-top:8px;"><button class="btn ghost" id="rescanImage">Upload a different image</button></div>'+
+        '</div>';
+      document.querySelectorAll("#chipGrid .chip").forEach(chip=>{
+        chip.addEventListener("click", ()=>{
+          const w = chip.dataset.word;
+          if(imageState.selected.has(w)) imageState.selected.delete(w);
+          else imageState.selected.add(w);
+          chip.classList.toggle("selected");
+        });
+      });
+      document.getElementById("startImageQuiz").addEventListener("click", ()=>{
+        const words = Array.from(imageState.selected);
+        if(words.length===0) return;
+        imageState.queue = shuffle(words);
+        imageState.idx = 0;
+        imageState.score = 0;
+        imageState.missed = [];
+        imageState.phase = "quiz";
+        loadImageWord();
+      });
+      document.getElementById("rescanImage").addEventListener("click", ()=>{
+        imageState.phase = "upload";
+        imageState.extracted = [];
+        imageState.selected = new Set();
+        renderImage();
+      });
+      return;
+    }
+    if(imageState.phase==="quiz"){
+      if(imageState.idx >= imageState.queue.length){
+        renderSummary(imageState.score, imageState.queue.length, imageState.missed, ()=>{
+          imageState.phase = "upload";
+          imageState.extracted = [];
+          imageState.selected = new Set();
+          render();
+        }, ()=>{
+          imageState.queue = shuffle(imageState.missed.map(m=>m.word));
+          imageState.idx = 0;
+          imageState.score = 0;
+          imageState.missed = [];
+          loadImageWord();
+        });
+        return;
+      }
+      const rp = resolveAudioPhonetic(imageState.phonRaw);
+      renderQuizCard({
+        word: imageState.current,
+        difficulty: "custom",
+        def: imageState.def,
+        example: imageState.example,
+        audio: rp.audio,
+        phonetic: rp.phonetic,
+        progress: 'Word <b>'+(imageState.idx+1)+'</b> of '+imageState.queue.length,
+        onSubmit:(val)=>handleImageSubmit(val),
+        onNext:()=>{ imageState.idx++; loadImageWord(); },
+        endOfList:false
+      });
+    }
+  }
+
+  function handleImageUpload(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    const statusEl = document.getElementById("ocrStatus");
+    const reader = new FileReader();
+    reader.onload = function(ev){
+      const dataUrl = ev.target.result;
+      cardInner.querySelector(".upload-box").insertAdjacentHTML("afterend",
+        '<img class="preview-thumb" src="'+dataUrl+'" alt="Uploaded image preview">');
+      runOCR(dataUrl, statusEl);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function runOCR(dataUrl, statusEl){
+    if(typeof Tesseract === "undefined"){
+      statusEl.textContent = "Text recognition didn't load — check your connection and try again.";
+      return;
+    }
+    imageState.ocrBusy = true;
+    statusEl.textContent = "Reading the image… this can take a moment.";
+    Tesseract.recognize(dataUrl, 'eng', {
+      logger: m=>{
+        if(m.status==="recognizing text" && statusEl){
+          statusEl.textContent = "Reading the image… " + Math.round((m.progress||0)*100) + "%";
+        }
+      }
+    }).then(({data})=>{
+      imageState.ocrBusy = false;
+      const raw = (data && data.text) ? data.text : "";
+      const words = Array.from(new Set(
+        raw.split(/[^A-Za-z']+/)
+          .map(w=>w.trim())
+          .filter(w=>w.length>=3 && w.length<=20)
+          .map(w=>w.toLowerCase())
+      ));
+      if(words.length===0){
+        statusEl.textContent = "Couldn't find readable words in that image — try a clearer photo.";
+        return;
+      }
+      imageState.extracted = words;
+      imageState.selected = new Set(words);
+      imageState.phase = "picking";
+      renderImage();
+    }).catch(()=>{
+      imageState.ocrBusy = false;
+      statusEl.textContent = "Something went wrong reading that image. Try another one.";
+    });
+  }
+
+  async function loadImageWord(){
+    if(imageState.idx >= imageState.queue.length){ renderImage(); return; }
+    imageState.current = imageState.queue[imageState.idx];
+    imageState.def = null;
+    imageState.example = null;
+    imageState.phonRaw = [];
+    renderImage();
+    const {def, example, phonRaw} = await fetchDefinition(imageState.current);
+    imageState.def = def;
+    imageState.example = example;
+    imageState.phonRaw = phonRaw;
+    if(!answered) renderImage();
+  }
+
+  function handleImageSubmit(val){
+    const correct = normalize(val)===normalize(imageState.current);
+    if(correct) imageState.score++;
+    else imageState.missed.push({word:imageState.current, typed:val});
+    const rp = resolveAudioPhonetic(imageState.phonRaw);
+    showFeedback(correct, val, imageState.current, imageState.def, rp.audio, ()=>{
+      imageState.idx++;
+      loadImageWord();
+    });
+  }
+
+  // =========================================================
+  // SHARED QUIZ CARD RENDERING
+  // =========================================================
+  function renderQuizCard(opts){
+    answered = false;
+    const d = opts.difficulty;
+    const extraText = opts.example ? opts.example : (opts.def ? ("This word means: " + opts.def) : null);
+    const extraLabel = opts.example ? "Use in a sentence" : "Hear the definition";
+    cardInner.innerHTML =
+      '<div class="tag-row">'+
+        '<span class="tag diff-'+d+'">'+diffLabel(d)+'</span>'+
+        '<span>'+opts.progress+'</span>'+
+      '</div>'+
+      '<div class="speaker-zone">'+
+        '<button class="speaker-btn" id="speakBtn" aria-label="Hear the word">'+ICON.speaker+'</button>'+
+        '<p class="speaker-hint">Tap to hear the word'+(opts.audio?' (real recording)':'')+'</p>'+
+        (opts.phonetic ? '<p class="phonetic">'+escapeHtml(opts.phonetic)+'</p>' : '')+
+        '<div class="mini-actions">'+
+          '<button class="mini-btn on" id="rateBtn">'+RATE_LABEL[rateLevel]+'</button>'+
+          '<button class="mini-btn" id="sentenceBtn"'+(extraText?'':' disabled')+'>'+extraLabel+'</button>'+
+        '</div>'+
+      '</div>'+
+      '<div class="answer-row">'+
+        '<input type="text" id="answerInput" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type what you hear">'+
+      '</div>'+
+      '<div class="submit-row"><button class="btn" id="submitBtn">Check spelling</button></div>'+
+      '<div id="feedbackZone"></div>';
+
+    document.getElementById("speakBtn").addEventListener("click", ()=>speak(opts.word, opts.audio));
+    document.getElementById("rateBtn").addEventListener("click", ()=>{
+      const i = RATE_ORDER.indexOf(rateLevel);
+      rateLevel = RATE_ORDER[(i+1) % RATE_ORDER.length];
+      renderQuizCard(opts);
+      speak(opts.word, opts.audio);
+    });
+    if(extraText){
+      document.getElementById("sentenceBtn").addEventListener("click", ()=>{
+        speak(extraText);
+      });
+    }
+    const input = document.getElementById("answerInput");
+    const submitBtn = document.getElementById("submitBtn");
+    input.addEventListener("keydown", e=>{
+      if(e.key==="Enter"){ e.preventDefault(); e.stopPropagation(); submitBtn.click(); }
+    });
+    submitBtn.addEventListener("click", ()=>{
+      if(answered) return;
+      const val = input.value;
+      if(!val.trim()){ input.focus(); return; }
+      answered = true;
+      opts.onSubmit(val);
+    });
+
+    // auto-speak the word once when a fresh card appears
+    setTimeout(()=>speak(opts.word, opts.audio), 300);
+    input.focus();
+  }
+
+  function showFeedback(correct, userAnswer, correctWord, def, audio, onContinue){
+    const zone = document.getElementById("feedbackZone");
+    document.getElementById("submitBtn").style.display = "none";
+    document.getElementById("answerInput").disabled = true;
+
+    if(correct){
+      zone.innerHTML =
+        '<div class="feedback correct">'+
+          '<div class="verdict">✓ Correct!</div>'+
+          (def?'<p class="definition">'+escapeHtml(def)+'</p>':'')+
+        '</div>'+
+        '<div class="submit-row"><button class="btn" id="nextBtn">Next word →</button></div>';
+      const nextBtn = document.getElementById("nextBtn");
+      nextBtn.addEventListener("click", onContinue);
+      nextBtn.focus();
+      document.addEventListener("keydown", function onKey(e){
+        if(e.key==="Enter"){
+          document.removeEventListener("keydown", onKey);
+          onContinue();
+        }
+      }, {once:true});
+      return;
+    }
+
+    // ---- incorrect: no Next button yet. Diagnose, then a write-5x-then-retest cycle. ----
+    zone.innerHTML =
+      '<div class="feedback incorrect">'+
+        '<div class="verdict">✕ Not quite</div>'+
+        '<div class="spelled-out">'+diffHighlight(userAnswer, correctWord)+'</div>'+
+        (def?'<p class="definition">'+escapeHtml(def)+'</p>':'')+
+      '</div>'+
+      '<p style="text-align:center;font-size:13px;color:var(--accent);margin:18px 0 6px;">Scroll down and write <b>'+escapeHtml(correctWord)+'</b> correctly 5 times, then we\'ll test you on it again.</p>'+
+      '<div id="writeZone"></div>';
+
+    let rep = 0;
+
+    function renderWriteStep(){
+      const wz = document.getElementById("writeZone");
+      wz.innerHTML =
+        '<div style="text-align:center;"><div class="target-word" style="font-size:26px;">'+escapeHtml(correctWord)+'</div></div>'+
+        '<p style="text-align:center;font-family:var(--font-mono);font-size:11.5px;color:var(--chalk-dim);margin:-10px 0 14px;">'+rep+' of 5 written correctly</p>'+
+        '<div class="answer-row"><input type="text" id="fixInput" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type the word above"></div>'+
+        '<div class="submit-row"><button class="btn" id="fixSubmit">Submit</button></div>'+
+        '<div id="fixFeedback"></div>'+
+        '<div id="doneZone"></div>';
+
+      const input = document.getElementById("fixInput");
+      const btn = document.getElementById("fixSubmit");
+      input.addEventListener("keydown", e=>{
+        if(e.key==="Enter"){ e.preventDefault(); e.stopPropagation(); btn.click(); }
+      });
+      btn.addEventListener("click", ()=>{
+        const val = input.value;
+        if(!val.trim()){ input.focus(); return; }
+        const fb = document.getElementById("fixFeedback");
+        if(normalize(val)===normalize(correctWord)){
+          rep++;
+          if(rep>=5){
+            fb.innerHTML = '<p style="color:var(--good);text-align:center;font-family:var(--font-mono);font-size:12.5px;margin-top:10px;">✓ 5 of 5 — nicely written</p>';
+            input.disabled = true;
+            btn.disabled = true;
+            document.getElementById("doneZone").innerHTML =
+              '<div class="submit-row"><button class="btn" id="doneWriteBtn">Done — test me again</button></div>';
+            const doneBtn = document.getElementById("doneWriteBtn");
+            doneBtn.addEventListener("click", renderRetestStep);
+            doneBtn.focus();
+          } else {
+            fb.innerHTML = '<p style="color:var(--good);text-align:center;font-family:var(--font-mono);font-size:12.5px;margin-top:10px;">✓ '+rep+' of 5</p>';
+            input.value = "";
+            input.focus();
+          }
+        } else {
+          fb.innerHTML = '<p style="color:var(--bad);text-align:center;font-family:var(--font-mono);font-size:12.5px;margin-top:10px;">Not quite — match it exactly and try again</p>';
+          input.focus();
+          input.select();
+        }
+      });
+      input.focus();
+    }
+
+    function renderRetestStep(){
+      const wz = document.getElementById("writeZone");
+      wz.innerHTML =
+        '<div style="text-align:center;margin-top:6px;">'+
+          '<button class="speaker-btn" id="retestSpeak" aria-label="Hear the word" style="width:70px;height:70px;">'+ICON.speaker+'</button>'+
+          '<p class="speaker-hint">Listen, then spell it — no peeking</p>'+
+        '</div>'+
+        '<div class="answer-row"><input type="text" id="retestInput" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type what you hear"></div>'+
+        '<div class="submit-row"><button class="btn" id="retestSubmit">Check spelling</button></div>'+
+        '<div id="retestFeedback"></div>';
+
+      document.getElementById("retestSpeak").addEventListener("click", ()=>speak(correctWord, audio));
+      setTimeout(()=>speak(correctWord, audio), 250);
+
+      const rInput = document.getElementById("retestInput");
+      const rBtn = document.getElementById("retestSubmit");
+      rInput.addEventListener("keydown", e=>{
+        if(e.key==="Enter"){ e.preventDefault(); e.stopPropagation(); rBtn.click(); }
+      });
+      rBtn.addEventListener("click", ()=>{
+        const val = rInput.value;
+        if(!val.trim()){ rInput.focus(); return; }
+        const rf = document.getElementById("retestFeedback");
+        if(normalize(val)===normalize(correctWord)){
+          rf.innerHTML = '<p style="color:var(--good);text-align:center;font-family:var(--font-mono);font-size:13px;margin-top:10px;">✓ Got it this time!</p>';
+          rInput.disabled = true;
+          rBtn.disabled = true;
+          wz.insertAdjacentHTML("beforeend", '<div class="submit-row"><button class="btn" id="nextBtn">Next word →</button></div>');
+          const nb = document.getElementById("nextBtn");
+          nb.addEventListener("click", onContinue);
+          nb.focus();
+          document.addEventListener("keydown", function onKey(e){
+            if(e.key==="Enter"){
+              document.removeEventListener("keydown", onKey);
+              onContinue();
+            }
+          }, {once:true});
+        } else {
+          rf.innerHTML = '<p style="color:var(--bad);text-align:center;font-family:var(--font-mono);font-size:13px;margin-top:10px;">Still not quite — write it 5 more times before we test you again.</p>';
+          rInput.disabled = true;
+          rBtn.disabled = true;
+          setTimeout(()=>{ rep = 0; renderWriteStep(); }, 1400);
+        }
+      });
+      rInput.focus();
+    }
+
+    renderWriteStep();
+  }
+
+  function renderSummary(score, total, missed, onDone, onRetryMissed){
+    const pct = total>0 ? Math.round((score/total)*100) : 0;
+    const mistakeCount = missed.length;
+    let missedHtml = "";
+    if(missed.length>0){
+      missedHtml = '<div class="missed-list">'+missed.map(m=>
+        '<div>'+escapeHtml(m.word)+' — you wrote <b>'+escapeHtml(m.typed||"(nothing)")+'</b></div>'
+      ).join("")+'</div>';
+    }
+    cardInner.innerHTML =
+      '<div class="summary">'+
+        '<div class="big">'+score+' / '+total+'</div>'+
+        '<div class="lbl">Words spelled correctly ('+pct+'%)</div>'+
+        '<div class="lbl" style="margin-top:8px;color:var(--bad);">Mistakes: '+mistakeCount+' out of '+total+'</div>'+
+        missedHtml+
+        '<div class="action-row">'+
+          (missed.length>0 ? '<button class="btn" id="writeDrillBtn">Write out mistakes ×5</button>' : '')+
+          (missed.length>0 ? '<button class="btn ghost" id="retryMissed">Practice missed words</button>' : '')+
+          '<button class="btn ghost" id="doneBtn">Start over</button>'+
+        '</div>'+
+      '</div>';
+    document.getElementById("doneBtn").addEventListener("click", onDone);
+    if(missed.length>0){
+      document.getElementById("retryMissed").addEventListener("click", onRetryMissed);
+      document.getElementById("writeDrillBtn").addEventListener("click", ()=>{
+        startDrill(missed, onDone);
+      });
+    }
+  }
+
+  // =========================================================
+  // WRITE-IT-OUT DRILL (write each mistake 5 times, correct spelling shown)
+  // =========================================================
+  function startDrill(missedPairs, returnTo){
+    drillState.words = Array.from(new Set(missedPairs.map(m=>m.word)));
+    drillState.pairs = [];
+    const seen = new Set();
+    missedPairs.forEach(m=>{
+      if(!seen.has(m.word)){ seen.add(m.word); drillState.pairs.push(m); }
+    });
+    drillState.wordIdx = 0;
+    drillState.rep = 0;
+    drillState.active = true;
+    drillState.returnTo = returnTo;
+    renderDrill();
+  }
+
+  function renderDrill(){
+    answered = false;
+    if(drillState.wordIdx >= drillState.words.length){
+      renderDrillComplete();
+      return;
+    }
+    const word = drillState.words[drillState.wordIdx];
+    const cheat = drillState.pairs.map(p=>
+      '<div class="row"><span class="wrong">'+escapeHtml(p.typed||"(blank)")+'</span><span class="right">'+escapeHtml(p.word)+'</span></div>'
+    ).join("");
+
+    cardInner.innerHTML =
+      '<div class="tag-row">'+
+        '<span class="tag diff-hard">Write it out</span>'+
+        '<span>Word '+(drillState.wordIdx+1)+' of '+drillState.words.length+' · Rep '+(drillState.rep+1)+' of 5</span>'+
+      '</div>'+
+      '<p style="text-align:center;font-size:12.5px;color:var(--chalk-dim);margin:0 0 4px;">Type it exactly as shown, five times, to lock it in</p>'+
+      '<div style="text-align:center;"><div class="target-word">'+escapeHtml(word)+'</div></div>'+
+      '<div class="answer-row"><input type="text" id="drillInput" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type the word above"></div>'+
+      '<div class="submit-row"><button class="btn" id="drillSubmit">Submit</button></div>'+
+      '<div id="drillFeedback"></div>'+
+      '<details class="cheat-table"><summary>All your mistakes &amp; correct spelling</summary>'+cheat+'</details>';
+
+    const input = document.getElementById("drillInput");
+    const btn = document.getElementById("drillSubmit");
+    input.addEventListener("keydown", e=>{
+      if(e.key==="Enter"){ e.preventDefault(); e.stopPropagation(); btn.click(); }
+    });
+    btn.addEventListener("click", ()=>{
+      const val = input.value;
+      if(!val.trim()){ input.focus(); return; }
+      const fb = document.getElementById("drillFeedback");
+      if(normalize(val)===normalize(word)){
+        drillState.rep++;
+        fb.innerHTML = '<p style="color:var(--good);text-align:center;font-family:var(--font-mono);font-size:12.5px;margin-top:10px;">✓ '+drillState.rep+' of 5</p>';
+        input.value = "";
+        if(drillState.rep>=5){
+          drillState.wordIdx++;
+          drillState.rep = 0;
+          setTimeout(renderDrill, 450);
+        } else {
+          input.focus();
+        }
+      } else {
+        fb.innerHTML = '<p style="color:var(--bad);text-align:center;font-family:var(--font-mono);font-size:12.5px;margin-top:10px;">Not quite — match it exactly and try again</p>';
+        input.focus();
+        input.select();
+      }
+    });
+    input.focus();
+  }
+
+  function renderDrillComplete(){
+    const cheat = drillState.words.map(w=>
+      '<div>'+escapeHtml(w)+'</div>'
+    ).join("");
+    cardInner.innerHTML =
+      '<div class="summary">'+
+        '<div class="big" style="font-size:28px;">Well drilled ✍️</div>'+
+        '<div class="lbl">You wrote each mistake out 5 times</div>'+
+        '<div class="missed-list">'+cheat+'</div>'+
+        '<div class="action-row"><button class="btn ghost" id="drillDoneBtn">Start over</button></div>'+
+      '</div>';
+    document.getElementById("drillDoneBtn").addEventListener("click", ()=>{
+      drillState.active = false;
+      if(drillState.returnTo) drillState.returnTo();
+      else fullRestart();
+    });
+  }
+
+  function shuffle(arr){
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]]=[a[j],a[i]];
+    }
+    return a;
+  }
+
+  // ---------- restart ----------
+  function fullRestart(){
+    if('speechSynthesis' in window) speechSynthesis.cancel();
+
+    randomState.current=null; randomState.score=0; randomState.total=0;
+    randomState.def=null; randomState.example=null; randomState.phonRaw=[];
+
+    customState.queue=[]; customState.idx=0; customState.score=0; customState.missed=[];
+    customState.current=null; customState.def=null; customState.example=null; customState.phonRaw=[];
+
+    imageState.extracted=[]; imageState.selected=new Set(); imageState.queue=[]; imageState.idx=0;
+    imageState.score=0; imageState.missed=[]; imageState.current=null; imageState.phase="upload";
+    imageState.def=null; imageState.example=null; imageState.phonRaw=[];
+
+    drillState.words=[]; drillState.pairs=[]; drillState.wordIdx=0; drillState.rep=0; drillState.active=false; drillState.returnTo=null;
+
+    render();
+  }
+  const globalRestartBtn = document.getElementById("globalRestartBtn");
+  if(globalRestartBtn) globalRestartBtn.addEventListener("click", fullRestart);
+
+  // ---------- init ----------
+  render();
+})();
+</script>
+</body>
+</html>
